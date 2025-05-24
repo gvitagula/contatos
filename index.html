@@ -1,0 +1,844 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fábrica Vita Gula - Contatos</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Orbitron:wght@400&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #1a1a1a;
+      color: #f0f0f0;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      flex-direction: column;
+    }
+    .container {
+      width: 100%;
+      max-width: 1600px;
+      background-color: #2c2c2c;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+      border-radius: 15px;
+      overflow: hidden;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      box-sizing: border-box;
+      padding-top: 140px;
+    }
+    .header {
+      background: linear-gradient(135deg, #1e90ff 0%, #00cc99 100%);
+      color: #ffffff;
+      padding: 20px 40px;
+      border-bottom: 5px solid #ff6f61;
+      position: fixed;
+      top: 0;
+      width: 100%;
+      box-sizing: border-box;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 100px;
+      z-index: 1001;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    }
+    .title-container {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding-left: 10px;
+      max-width: 75%;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 1.8em;
+      font-weight: 600;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .header p {
+      margin: 2px 0 0;
+      font-size: 0.9em;
+      font-weight: 400;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .header p:last-child {
+      font-size: 0.8em;
+      opacity: 0.9;
+    }
+    .audio-controls {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background-color: rgba(255, 255, 255, 0.1);
+      padding: 4px;
+      border-radius: 6px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+      margin-right: 8px;
+    }
+    .control-buttons {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    .control-buttons .control-btn {
+      cursor: pointer;
+      color: #ffffff;
+      font-size: 0.7em;
+      transition: transform 0.1s ease;
+      min-width: 26px;
+      min-height: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: manipulation;
+    }
+    .control-buttons .control-btn:hover {
+      transform: scale(1.1);
+    }
+    .control-buttons .play-pause-btn {
+      width: 18px;
+      height: 18px;
+      background-color: #ffffff;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #1e90ff;
+      font-size: 0.7em;
+    }
+    .track-controls {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .volume-icon {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+      color: #ffffff;
+      background-color: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      transition: transform 0.2s ease, background-color 0.2s ease;
+      touch-action: manipulation;
+    }
+    .volume-icon:hover {
+      transform: scale(1.15);
+      background-color: rgba(255, 255, 255, 0.3);
+    }
+    .volume-icon svg {
+      width: 10px;
+      height: 10px;
+      fill: #ffffff;
+    }
+    .waveform {
+      width: 32px;
+      height: 6px;
+      background-color: #ffffff;
+      border-radius: 4px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 2px;
+    }
+    .waveform .bar {
+      width: 0.6px;
+      height: 100%;
+      background-color: #1e90ff;
+      border-radius: 2px;
+      animation: none;
+    }
+    .waveform.playing .bar {
+      animation: wave 1s infinite ease-in-out;
+    }
+    .waveform.playing .bar:nth-child(1) { animation-delay: 0s; }
+    .waveform.playing .bar:nth-child(2) { animation-delay: 0.1s; }
+    .waveform.playing .bar:nth-child(3) { animation-delay: 0.2s; }
+    .waveform.playing .bar:nth-child(4) { animation-delay: 0.3s; }
+    .waveform.playing .bar:nth-child(5) { animation-delay: 0.4s; }
+    .waveform.playing .bar:nth-child(6) { animation-delay: 0.5s; }
+    .waveform.playing .bar:nth-child(7) { animation-delay: 0.6s; }
+    .waveform.playing .bar:nth-child(8) { animation-delay: 0.7s; }
+    @keyframes wave {
+      0%, 100% { height: 20%; }
+      50% { height: 80%; }
+    }
+    .nav-menu {
+      background-color: #3a3a3a;
+      padding: 6px;
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      position: fixed;
+      top: 100px;
+      width: 100%;
+      z-index: 1000;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+      box-sizing: border-box;
+    }
+    .nav-item {
+      padding: 6px 10px;
+      background-color: #ff6f61;
+      color: #ffffff;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background-color 0.3s ease;
+      text-decoration: none;
+      font-size: 0.9em;
+      min-width: 44px;
+      text-align: center;
+      touch-action: manipulation;
+    }
+    .nav-item:hover {
+      background-color: #ffffff;
+      color: #ff6f61;
+    }
+    .nav-item.active {
+      background-color: #ffffff;
+      color: #ff6f61;
+    }
+    .dropdown {
+      position: relative;
+    }
+    .dropdown-toggle::after {
+      content: '▼';
+      font-size: 0.8em;
+      margin-left: 5px;
+      display: inline-block;
+      transition: transform 0.3s ease;
+    }
+    .dropdown.open .dropdown-toggle::after {
+      transform: rotate(180deg);
+    }
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      background-color: #3a3a3a;
+      min-width: 160px;
+      box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.5);
+      z-index: 1002;
+      top: 100%;
+      left: 0;
+      border-radius: 5px;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+    .dropdown.open .dropdown-content {
+      display: block;
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .dropdown-content a {
+      display: block;
+      padding: 10px 14px;
+      text-align: left;
+      cursor: pointer;
+      color: #f0f0f0;
+      text-decoration: none;
+      transition: background-color 0.3s ease;
+      font-size: 0.9em;
+      touch-action: manipulation;
+    }
+    .dropdown-content a:hover {
+      background-color: #ff6f61;
+      color: #ffffff;
+    }
+    .dropdown-content a.active {
+      background-color: #ff6f61;
+      color: #ffffff;
+    }
+    .tab-content {
+      padding: 15px;
+      background-color: #3a3a3a;
+      border-radius: 10px;
+      margin: 10px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+      flex: 1;
+      overflow-y: auto;
+      box-sizing: border-box;
+      text-align: center;
+    }
+    .contact-section {
+      max-width: 800px;
+      margin: 20px auto;
+      padding: 20px;
+      background-color: #2c2c2c;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+    .contact-section h2 {
+      font-size: 1.8em;
+      color: #ff6f61;
+      margin-bottom: 20px;
+    }
+    .contact-item {
+      display: flex;
+      align-items: center;
+      margin: 15px 0;
+      font-size: 1em;
+      color: #f0f0f0;
+    }
+    .contact-item svg {
+      width: 24px;
+      height: 24px;
+      fill: #ff6f61;
+      margin-right: 15px;
+    }
+    .contact-item a {
+      color: #1e90ff;
+      text-decoration: none;
+      transition: color 0.3s ease;
+    }
+    .contact-item a:hover {
+      color: #ffffff;
+    }
+    .visitor-counter {
+      text-align: center;
+      padding: 12px;
+      background-color: #252525;
+      border: 1px solid #00ffcc;
+      border-radius: 8px;
+      margin: 15px auto;
+      max-width: 250px;
+      font-family: 'Orbitron', sans-serif;
+      color: #00cc99;
+      box-shadow: 0 0 10px rgba(0, 255, 204, 0.3);
+    }
+    .visitor-counter span {
+      font-size: 1.1em;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.7; }
+      100% { opacity: 1; }
+    }
+    .megaphone-message {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: #ff6f61;
+      color: #ffffff;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+      z-index: 10000;
+      text-align: center;
+      font-size: 1em;
+      width: 90%;
+      max-width: 300px;
+    }
+    .megaphone-message button {
+      margin-top: 10px;
+      padding: 8px 16px;
+      background-color: #ffffff;
+      color: #ff6f61;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 0.9em;
+      min-width: 44px;
+      min-height: 44px;
+      touch-action: manipulation;
+    }
+    @media (min-width: 768px) {
+      .container {
+        padding-top: 160px;
+      }
+      .header {
+        height: 110px;
+        padding: 25px 50px;
+      }
+      .title-container {
+        padding-left: 12px;
+        max-width: 80%;
+      }
+      .header h1 {
+        font-size: 2.2em;
+      }
+      .header p {
+        font-size: 1.1em;
+      }
+      .header p:last-child {
+        font-size: 1em;
+      }
+      .audio-controls {
+        padding: 5px;
+        margin-right: 10px;
+      }
+      .control-buttons .control-btn {
+        font-size: 0.8em;
+        min-width: 28px;
+        min-height: 28px;
+      }
+      .control-buttons .play-pause-btn {
+        width: 20px;
+        height: 20px;
+        font-size: 0.8em;
+      }
+      .volume-icon {
+        width: 20px;
+        height: 20px;
+      }
+      .volume-icon svg {
+        width: 12px;
+        height: 12px;
+      }
+      .waveform {
+        width: 36px;
+        height: 8px;
+      }
+      .track-controls {
+        gap: 5px;
+      }
+      .nav-menu {
+        padding: 10px;
+        gap: 8px;
+        top: 110px;
+      }
+      .nav-item {
+        padding: 8px 12px;
+        font-size: 0.9em;
+      }
+      .visitor-counter {
+        max-width: 300px;
+        padding: 15px;
+      }
+      .contact-section h2 {
+        font-size: 2em;
+      }
+      .contact-item {
+        font-size: 1.1em;
+      }
+      .contact-item svg {
+        width: 28px;
+        height: 28px;
+      }
+    }
+    @media (max-width: 600px) {
+      .container {
+        border-radius: 0;
+        padding-top: 140px;
+      }
+      .header {
+        height: 90px;
+        padding: 15px 25px;
+      }
+      .title-container {
+        padding-left: 8px;
+        max-width: 70%;
+      }
+      .header h1 {
+        font-size: 1.6em;
+      }
+      .header p {
+        font-size: 0.8em;
+      }
+      .header p:last-child {
+        font-size: 0.7em;
+      }
+      .audio-controls {
+        padding: 3px;
+        margin-right: 6px;
+      }
+      .control-buttons .control-btn {
+        font-size: 0.6em;
+        min-width: 24px;
+        min-height: 24px;
+      }
+      .control-buttons .play-pause-btn {
+        width: 16px;
+        height: 16px;
+        font-size: 0.6em;
+      }
+      .volume-icon {
+        width: 16px;
+        height: 16px;
+      }
+      .volume-icon svg {
+        width: 8px;
+        height: 8px;
+      }
+      .waveform {
+        width: 28px;
+        height: 5px;
+      }
+      .track-controls {
+        gap: 3px;
+      }
+      .nav-menu {
+        padding: 5px;
+        gap: 4px;
+        top: 90px;
+      }
+      .nav-item {
+        padding: 4px 8px;
+        font-size: 0.8em;
+        min-width: 40px;
+      }
+      .dropdown-content {
+        width: 100%;
+        min-width: 0;
+        left: 0;
+        background-color: #3a3a3a;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        border-radius: 0 0 5px 5px;
+      }
+      .dropdown-content a {
+        font-size: 0.7em;
+        padding: 6px 10px;
+        text-align: center;
+      }
+      .tab-content {
+        padding: 10px;
+        margin: 6px;
+      }
+      .visitor-counter {
+        max-width: 180px;
+        padding: 8px;
+        font-size: 0.8em;
+      }
+      .contact-section {
+        padding: 15px;
+      }
+      .contact-section h2 {
+        font-size: 1.5em;
+      }
+      .contact-item {
+        font-size: 0.9em;
+      }
+      .contact-item svg {
+        width: 20px;
+        height: 20px;
+      }
+    }
+  </style>
+</head>
+<body onclick="handleFirstClick()">
+  <div class="container">
+    <header class="header" role="banner" aria-label="Cabeçalho da Fábrica Vita Gula">
+      <div class="title-container">
+        <h1 style="font-size: 23px;">Fábrica Vita Gula</h1>
+        <p>Sabor, Tradição e Qualidade</p>
+        <p>Desde 2001</p>
+      </div>
+      <div class="audio-controls" role="region" aria-label="Controles de áudio">
+        <div class="control-buttons">
+          <span class="control-btn play-pause-btn" id="play-pause-btn" onclick="playClickSound(); togglePlayPause()" onmouseover="playHoverSound()" aria-label="Tocar ou pausar" tabindex="0" onkeydown="if(event.key === 'Enter') { playClickSound(); togglePlayPause(); }">▶</span>
+          <div class="track-controls">
+            <span class="control-btn" id="prev-btn" onclick="playClickSound(); playPrevious()" onmouseover="playHoverSound()" aria-label="Tocar faixa anterior" tabindex="0" onkeydown="if(event.key === 'Enter') { playClickSound(); playPrevious(); }">⏮</span>
+            <div class="waveform" id="waveform">
+              <div class="bar"></div>
+              <div class="bar"></div>
+              <div class="bar"></div>
+              <div class="bar"></div>
+              <div class="bar"></div>
+              <div class="bar"></div>
+              <div class="bar"></div>
+              <div class="bar"></div>
+            </div>
+            <span class="control-btn" id="next-btn" onclick="playClickSound(); playNext()" onmouseover="playHoverSound()" aria-label="Tocar próxima faixa" tabindex="0" onkeydown="if(event.key === 'Enter') { playClickSound(); playNext(); }">⏭</span>
+          </div>
+          <span class="volume-icon low" id="volume-icon" onclick="playClickSound(); changeVolume()" onmouseover="playHoverSound()" aria-label="Ajustar volume" tabindex="0" onkeydown="if(event.key === 'Enter') { playClickSound(); changeVolume(); }">
+            <svg class="volume-mute" viewBox="0 0 24 24" style="display: none;">
+              <path d="M3 9v6h4l5 5V4L7 9H3zm11 0l3.5 3.5L14 15V9zm5.5 3l-2.5-2.5L19.5 7l2.5 2.5L19.5 12z"/>
+            </svg>
+            <svg class="volume-low" viewBox="0 0 24 24">
+              <path d="M3 9v6h4l5 5V4L7 9H3z"/>
+            </svg>
+            <svg class="volume-medium" viewBox="0 0 24 24" style="display: none;">
+              <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
+            </svg>
+            <svg class="volume-high" viewBox="0 0 24 24" style="display: none;">
+              <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+            </svg>
+          </span>
+        </div>
+      </div>
+    </header>
+    <div class="nav-menu" role="navigation" aria-label="Menu principal">
+      <a class="nav-item" href="https://gvitagula.github.io/site/" onclick="playClickSound()" onmouseover="playHoverSound()" role="tab" aria-selected="false">Página Principal</a>
+      <a class="nav-item" href="https://gvitagula.github.io/quemsomos/" onclick="playClickSound()" onmouseover="playHoverSound()" role="tab" aria-selected="false">Quem Somos</a>
+      <div class="nav-item dropdown" role="tab" aria-selected="false">
+        <span class="dropdown-toggle" onclick="playClickSound(); toggleDropdown(event, 'produtos')" onmouseover="playHoverSound()">Produtos</span>
+        <div class="dropdown-content">
+          <a href="https://gvitagula.github.io/paes/" onclick="playClickSound(); setActiveTab('paes')" onmouseover="playHoverSound()" role="menuitem">Pães</a>
+          <a href="https://gvitagula.github.io/biscoitos/" onclick="playClickSound(); setActiveTab('biscoitos')" onmouseover="playHoverSound()" role="menuitem">Biscoitos</a>
+          <a href="https://gvitagula.github.io/bolos/" onclick="playClickSound(); setActiveTab('bolos')" onmouseover="playHoverSound()" role="menuitem">Bolos</a>
+          <a href="https://gvitagula.github.io/mais_produtos/" onclick="playClickSound(); setActiveTab('+produtos')" onmouseover="playHoverSound()" role="menuitem">+Produtos</a>
+          <a href="https://gvitagula.github.io/precos/" onclick="playClickSound(); setActiveTab('precos')" onmouseover="playHoverSound()" role="menuitem">Preços</a>
+        </div>
+      </div>
+      <a class="nav-item active" href="https://gvitagula.github.io/site/contatos" onclick="playClickSound()" onmouseover="playHoverSound()" role="tab" aria-selected="true">Contatos</a>
+      <a class="nav-item" href="https://gvitagula.github.io/site/parceiros" onclick="playClickSound()" onmouseover="playHoverSound()" role="tab" aria-selected="false">Parceiros</a>
+      <div class="nav-item dropdown" role="tab" aria-selected="false">
+        <span class="dropdown-toggle" onclick="playClickSound(); toggleDropdown(event, 'downloads')" onmouseover="playHoverSound()">Downloads</span>
+        <div class="dropdown-content">
+          <a href="https://gvitagula.github.io/programas/" onclick="playClickSound(); setActiveTab('programas')" onmouseover="playHoverSound()" role="menuitem">Programas</a>
+          <a href="https://gvitagula.github.io/imagens/" onclick="playClickSound(); setActiveTab('imagens')" onmouseover="playHoverSound()" role="menuitem">Imagens</a>
+          <a href="https://gvitagula.github.io/video/" onclick="playClickSound(); setActiveTab('videos')" onmouseover="playHoverSound()" role="menuitem">Vídeos</a>
+          <a href="https://gvitagula.github.io/mp3/" onclick="playClickSound(); setActiveTab('audios')" onmouseover="playHoverSound()" role="menuitem">Áudios</a>
+          <a href="https://gvitagula.github.io/pdf/" onclick="playClickSound(); setActiveTab('texto')" onmouseover="playHoverSound()" role="menuitem">Texto</a>
+          <a href="https://gvitagula.github.io/outros/" onclick="playClickSound(); setActiveTab('outros')" onmouseover="playHoverSound()" role="menuitem">Outros</a>
+        </div>
+      </div>
+    </div>
+    <div class="tab-content" role="main" aria-label="Informações de contato">
+      <div class="contact-section">
+        <h2>Entre em Contato</h2>
+        <div class="contact-item" aria-label="E-mail da Fábrica Vita Gula">
+          <svg viewBox="0 0 24 24">
+            <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+          </svg>
+          <span><a href="mailto:vitagula@hotmail.com">vitagula@hotmail.com</a></span>
+        </div>
+        <div class="contact-item" aria-label="Telefone da Fábrica Vita Gula">
+          <svg viewBox="0 0 24 24">
+            <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.24 1.02l-2.2 2.2z"/>
+          </svg>
+          <span><a href="tel:+5588988585090">(88) 98858-5090</a></span>
+        </div>
+        <div class="contact-item" aria-label="CNPJ da Fábrica Vita Gula">
+          <svg viewBox="0 0 24 24">
+            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+          </svg>
+          <span>08.356.196/0001-63</span>
+        </div>
+        <div class="contact-item" aria-label="Endereço da Fábrica Vita Gula">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+          </svg>
+          <span><a href="https://maps.google.com/?q=Av.+Presidente+Eurico+Dutra,+33C,+Esplanada+I,+Iguatu,+CE,+63502-593" target="_blank">Av. Presidente Eurico Dutra, 33C, Esplanada I, Iguatu, CE, 63502-593</a></span>
+        </div>
+      </div>
+      <div class="visitor-counter" aria-label="Contador de visitas">Visitas: <span id="visit-count">1000</span></div>
+    </div>
+  </div>
+
+  <audio id="background-audio" preload="auto">
+    <source id="audio-source" src="https://raw.githubusercontent.com/gvitagula/site/refs/heads/main/aud/musica1.mp3" type="audio/mpeg">
+    Seu navegador não suporta o elemento de áudio.
+  </audio>
+  <audio id="hover-sound">
+    <source src="https://raw.githubusercontent.com/gvitagula/site/refs/heads/main/aud/botao1.mp3" type="audio/mpeg">
+    Seu navegador não suporta o elemento de áudio.
+  </audio>
+  <audio id="click-sound">
+    <source src="https://raw.githubusercontent.com/gvitagula/site/refs/heads/main/aud/botao2.mp3" type="audio/mpeg">
+    Seu navegador não suporta o elemento de áudio.
+  </audio>
+
+  <div id="megaphone-message" class="megaphone-message" role="alert" aria-label="Mensagem promocional">
+    🎉 Entre em contato para conhecer nossas ofertas! 🎉
+    <button onclick="hideMegaphoneMessage()" aria-label="Fechar mensagem promocional">Fechar</button>
+  </div>
+
+  <script>
+    let volumeLevel = 0;
+    const audio = document.getElementById('background-audio');
+    const audioSource = document.getElementById('audio-source');
+    const waveform = document.getElementById('waveform');
+    const playPauseBtn = document.getElementById('play-pause-btn');
+    const hoverSound = document.getElementById('hover-sound');
+    const clickSound = document.getElementById('click-sound');
+    let isPlaying = false;
+    let hasClicked = false;
+    const tracks = [
+      "https://raw.githubusercontent.com/gvitagula/site/refs/heads/main/aud/musica1.mp3",
+      "https://raw.githubusercontent.com/gvitagula/site/refs/heads/main/aud/musica2.mp3",
+      "https://raw.githubusercontent.com/gvitagula/site/refs/heads/main/aud/musica3.mp3"
+    ];
+    let currentTrackIndex = 0;
+
+    function playHoverSound() {
+      if (!hoverSound.paused) hoverSound.pause();
+      hoverSound.currentTime = 0;
+      hoverSound.play().catch(error => console.error("Hover sound playback failed:", error));
+    }
+
+    function playClickSound() {
+      if (!clickSound.paused) clickSound.pause();
+      clickSound.currentTime = 0;
+      clickSound.play().catch(error => console.error("Click sound playback failed:", error));
+    }
+
+    function changeVolume() {
+      volumeLevel = (volumeLevel + 1) % 4;
+      const volumeIcon = document.getElementById('volume-icon');
+      const muteIcon = volumeIcon.querySelector('.volume-mute');
+      const lowIcon = volumeIcon.querySelector('.volume-low');
+      const mediumIcon = volumeIcon.querySelector('.volume-medium');
+      const highIcon = volumeIcon.querySelector('.volume-high');
+      volumeIcon.classList.remove('mute', 'low', 'medium', 'high');
+      muteIcon.style.display = 'none';
+      lowIcon.style.display = 'none';
+      mediumIcon.style.display = 'none';
+      highIcon.style.display = 'none';
+      let newVolume;
+      if (volumeLevel === 0) {
+        volumeIcon.classList.add('low');
+        lowIcon.style.display = 'block';
+        newVolume = 0.3;
+      } else if (volumeLevel === 1) {
+        volumeIcon.classList.add('medium');
+        mediumIcon.style.display = 'block';
+        newVolume = 0.6;
+      } else if (volumeLevel === 2) {
+        volumeIcon.classList.add('high');
+        highIcon.style.display = 'block';
+        newVolume = 1.0;
+      } else {
+        volumeIcon.classList.add('mute');
+        muteIcon.style.display = 'block';
+        newVolume = 0.0;
+      }
+      audio.volume = newVolume;
+      hoverSound.volume = newVolume;
+      clickSound.volume = newVolume;
+    }
+
+    function togglePlayPause() {
+      if (isPlaying) {
+        audio.pause();
+        playPauseBtn.innerHTML = '▶';
+        waveform.classList.remove('playing');
+        isPlaying = false;
+      } else {
+        audio.src = tracks[currentTrackIndex];
+        audio.play().then(() => {
+          playPauseBtn.innerHTML = '⏸';
+          waveform.classList.add('playing');
+          isPlaying = true;
+        }).catch(error => console.error("Audio playback failed:", error));
+      }
+    }
+
+    async function playPrevious() {
+      currentTrackIndex = (currentTrackIndex - 1 + tracks.length) % tracks.length;
+      audio.src = tracks[currentTrackIndex];
+      if (isPlaying) {
+        await audio.play();
+        waveform.classList.add('playing');
+        playPauseBtn.innerHTML = '⏸';
+      }
+    }
+
+    async function playNext() {
+      currentTrackIndex = (currentTrackIndex + 1) % tracks.length;
+      audio.src = tracks[currentTrackIndex];
+      if (isPlaying) {
+        await audio.play();
+        waveform.classList.add('playing');
+        playPauseBtn.innerHTML = '⏸';
+      }
+    }
+
+    audio.addEventListener('ended', playNext);
+
+    function handleFirstClick() {
+      if (!hasClicked) {
+        togglePlayPause();
+        hasClicked = true;
+      }
+    }
+
+    function toggleDropdown(event, tabName) {
+      event.preventDefault();
+      event.stopPropagation();
+      const dropdown = event.currentTarget.parentElement;
+      const isOpen = dropdown.classList.contains('open');
+      document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('open'));
+      if (!isOpen) dropdown.classList.add('open');
+    }
+
+    document.addEventListener('click', (event) => {
+      if (!event.target.closest('.dropdown')) {
+        document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('open'));
+      }
+    });
+
+    function setActiveTab(tabName) {
+      document.querySelectorAll('.nav-item, .dropdown-content a').forEach(item => {
+        item.classList.remove('active');
+      });
+      const activeItem = document.querySelector(`[onclick*="${tabName}"]`);
+      if (activeItem) activeItem.classList.add('active');
+    }
+
+    function hideMegaphoneMessage() {
+      document.getElementById('megaphone-message').style.display = 'none';
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      let visitCount = parseInt(localStorage.getItem('visitCount') || '1000', 10);
+      visitCount++;
+      localStorage.setItem('visitCount', visitCount);
+      document.getElementById('visit-count').textContent = visitCount;
+      document.getElementById('megaphone-message').style.display = 'block';
+      setTimeout(hideMegaphoneMessage, 5000);
+      setActiveTab('contatos');
+    });
+  </script>
+</body>
+</html>
